@@ -15,7 +15,7 @@ app.use('/', (req,res)=> {
     res.json({message:'App is working'});
 })
 
+app.use('api/menu', require('./routes/menuRoutes'));
+
 const PORT=process.env.PORT || 5000;
-app.listen(PORT,()=>{
-    console.log(`Server is running on port ${PORT}` );
-})
+app.listen(PORT,()=>{ console.log(`Server is running on port ${PORT}` ); })
