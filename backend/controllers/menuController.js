@@ -36,7 +36,7 @@ const getMenuItemById= async (req,res)=>{
         const menuItems= await MenuItem.findById(req.params.id);
 
         if(!menuItems){
-            res.status(404).json({
+            return res.status(404).json({
                 success: false,
                 message: 'menu item not found'
             });
