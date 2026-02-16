@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -35,7 +36,10 @@ const LoginPage = () => {
       localStorage.setItem('user', JSON.stringify(response.data));
 
       toast.success('Login successful!');
-      navigate('/');
+      
+      // Redirect to return URL or home
+      const returnUrl = searchParams.get('returnUrl') || '/';
+      navigate(returnUrl);
     } catch (error) {
       console.error('Login error:', error);
       toast.error(error.response?.data?.message || 'Login failed');
