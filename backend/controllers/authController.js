@@ -1,43 +1,15 @@
 const User = require('../models/User');
-const { validationResult } = require('express-validator');//Input validation
 const generateToken = require('../utils/generateToken');
+
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
 const register = async (req, res) => {
     try {
         const { name, email, password, phone, address, role } = req.body;
-        if (!name || !email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: "Please provide credentials",
-            });
-        }
-
-        const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-        if (!emailRegex.test(email)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Please provide a valid email',
-            })
-        }
-
-        if (password.length < 6) {
-            return res.status(400).json({
-                success: false,
-                message: 'Password must be at least 6 characters long',
-            });
-        }
-
-        const existingUser = await User.findOne({ email });
-        if (!existingUser) {
-            return res.status(400).json({
-                success: false,
-                message: 'User with this email already exists',
-            });
-        }
-
+        //validation are done
         const userData = { name, email, password, phone, address, role };
+
         if (role && ['customer', 'kitchen', 'admin'].includes(role)) {
             userData.role = role;
         }
@@ -75,14 +47,7 @@ const register = async (req, res) => {
 const login = async (req, res) => {
     try {
         const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Please provide email and password',
-            });
-        }
-
+        
         // Find user by email and explicitly select password field
         const user = await User.findOne({ email }).select('+password');
 
@@ -149,4 +114,124 @@ const getMe = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getMe }
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+const updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Update allowed fields
+    user.name = req.body.name || user.name;
+    user.email = req.body.email || user.email;
+    user.phone = req.body.phone || user.phone;
+    
+    if (req.body.address) {
+      user.address = {
+        street: req.body.address.street || user.address?.street,
+        city: req.body.address.city || user.address?.city,
+        state: req.body.address.state || user.address?.state,
+        zipCode: req.body.address.zipCode || user.address?.zipCode,
+        country: req.body.address.country || user.address?.country,
+      };
+    }
+
+    const updatedUser = await user.save();
+
+    // Update user in localStorage (frontend will handle this)
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        phone: updatedUser.phone,
+        address: updatedUser.address,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update profile',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Change password
+// @route   PUT /api/auth/change-password
+// @access  Private
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide current password and new password',
+      });
+    }
+
+    // Get user with password field
+    const user = await User.findById(req.user._id).select('+password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Check current password
+    const isPasswordMatch = await user.comparePassword(currentPassword);
+
+    if (!isPasswordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect',
+      });
+    }
+
+    // Validate new password strength
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 8 characters',
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully',
+    });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to change password',
+      error: error.message,
+    });
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  getMe,
+  updateProfile,
+  changePassword,
+};
