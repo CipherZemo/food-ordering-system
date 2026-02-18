@@ -10,6 +10,7 @@ const app=express();
 
 app.use(cors());
 app.use('/api/webhooks', require('./routes/webhookRoutes'));
+// Webhook route MUST be before express.json() since Stripe needs raw body for signature verification
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 

@@ -1,11 +1,18 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
 const Order = require('../models/Order');
 const MenuItem = require('../models/MenuItem');
 
-// @desc    Create Stripe PaymentIntent with server-side validation
-// @route   POST /api/orders/create-payment-intent
+// Initialize Razorpay instance
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
+// @desc    Create Razorpay Order with server-side validation
+// @route   POST /api/orders/create-razorpay-order
 // @access  Private
-const createPaymentIntent = async (req, res) => {
+const createRazorpayOrder = async (req, res) => {
   try {
     const { amount, items, deliveryAddress } = req.body;
 
@@ -97,54 +104,84 @@ const createPaymentIntent = async (req, res) => {
       });
     }
 
-    // Generate idempotency key to prevent duplicate charges
-    const idempotencyKey = `${req.user._id}-${Date.now()}`;
-
-    // Create PaymentIntent with Stripe
-    const paymentIntent = await stripe.paymentIntents.create(
-      {
-        amount: Math.round(serverTotalWithTax * 100), // Use SERVER-CALCULATED total
-        currency: 'usd',
-        metadata: {
+    // Create Razorpay Order
+    const razorpayOrder = await razorpay.orders.create({
+      amount: Math.round(serverTotalWithTax * 100), // Razorpay expects amount in paise (smallest currency unit)
+      currency: 'INR',
+      receipt: `receipt_${req.user._id}_${Date.now()}`,
+      notes: {
+        customerId: req.user._id.toString(),
+        customerEmail: req.user.email,
+        orderData: JSON.stringify({
           customerId: req.user._id.toString(),
-          orderData: JSON.stringify({
-            customerId: req.user._id.toString(),
-            items: validatedItems,
-            deliveryAddress,
-          }),
-        },
-        automatic_payment_methods: {
-          enabled: true,
-        },
+          items: validatedItems,
+          deliveryAddress,
+        }),
       },
-      {
-        idempotencyKey, // Prevent duplicate charges on retry
-      }
-    );
+    });
 
     res.status(200).json({
       success: true,
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
+      orderId: razorpayOrder.id,
+      amount: razorpayOrder.amount,
+      currency: razorpayOrder.currency,
       validatedTotal: serverTotalWithTax,
+      key: process.env.RAZORPAY_KEY_ID, // Send key to frontend
     });
   } catch (error) {
-    console.error('Error creating payment intent:', error);
+    console.error('Error creating Razorpay order:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to create payment intent',
+      message: 'Failed to create order',
       error: error.message,
     });
   }
 };
 
-// @desc    Create order after successful payment
-// @route   POST /api/orders
+// @desc    Verify Razorpay payment and create order
+// @route   POST /api/orders/verify-payment
 // @access  Private
-const createOrder = async (req, res) => {
+const verifyPayment = async (req, res) => {
   try {
-    // Validation already done by middleware
-    const { items, totalAmount, deliveryAddress, paymentIntentId } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, items, totalAmount, deliveryAddress } = req.body;
+
+    // Verify signature
+    const sign = razorpay_order_id + '|' + razorpay_payment_id;
+    const expectedSign = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(sign.toString())
+      .digest('hex');
+
+    if (razorpay_signature !== expectedSign) {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment verification failed. Invalid signature.',
+      });
+    }
+
+    // Signature is valid - fetch payment details from Razorpay
+    const payment = await razorpay.payments.fetch(razorpay_payment_id);
+
+    // Check if payment is captured/successful
+    if (payment.status !== 'captured' && payment.status !== 'authorized') {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment not successful',
+      });
+    }
+
+    // Check if order already exists (prevent duplicates)
+    const existingOrder = await Order.findOne({
+      razorpayPaymentId: razorpay_payment_id,
+    });
+
+    if (existingOrder) {
+      return res.status(200).json({
+        success: true,
+        message: 'Order already exists',
+        data: existingOrder,
+      });
+    }
 
     // Process order items
     const orderItems = await Promise.all(
@@ -180,15 +217,23 @@ const createOrder = async (req, res) => {
     );
     const estimatedPickupTime = new Date(Date.now() + (maxPrepTime + 10) * 60000);
 
+    // Determine payment method from Razorpay payment
+    let paymentMethod = 'card';
+    if (payment.method === 'upi') paymentMethod = 'upi';
+    else if (payment.method === 'netbanking') paymentMethod = 'netbanking';
+    else if (payment.method === 'wallet') paymentMethod = 'wallet';
+
     // Create order
     const order = await Order.create({
       customer: req.user._id,
       items: orderItems,
       totalAmount,
       deliveryAddress,
-      stripePaymentIntentId: paymentIntentId,
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
+      razorpaySignature: razorpay_signature,
       paymentStatus: 'paid',
-      paymentMethod: 'card',
+      paymentMethod,
       status: 'received',
       estimatedPickupTime,
     });
@@ -198,14 +243,14 @@ const createOrder = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Order created successfully',
+      message: 'Payment verified and order created successfully',
       data: order,
     });
   } catch (error) {
-    console.error('Error creating order:', error);
+    console.error('Error verifying payment:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Failed to create order',
+      message: error.message || 'Failed to verify payment',
     });
   }
 };
@@ -272,9 +317,4 @@ const getOrderById = async (req, res) => {
   }
 };
 
-module.exports = {
-  createPaymentIntent,
-  createOrder,
-  getMyOrders,
-  getOrderById,
-};
+module.exports = { createRazorpayOrder,verifyPayment,getMyOrders,getOrderById, };

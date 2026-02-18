@@ -59,10 +59,16 @@ const orderSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['card', 'cash'],
+      enum: ['card', 'upi', 'netbanking', 'wallet', 'cash'],
       default: 'card',
     },
-    stripePaymentIntentId: {
+    razorpayOrderId: {
+      type: String,
+    },
+    razorpayPaymentId: {
+      type: String,
+    },
+    razorpaySignature: {
       type: String,
     },
     deliveryAddress: {

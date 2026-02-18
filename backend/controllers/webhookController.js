@@ -1,168 +1,102 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const crypto = require('crypto');
 const Order = require('../models/Order');
 const MenuItem = require('../models/MenuItem');
 
-// @desc    Handle Stripe webhooks
-// @route   POST /api/webhooks/stripe
-// @access  Public (but verified with Stripe signature)
-const handleStripeWebhook = async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-  let event;
+// @desc    Handle Razorpay webhooks
+// @route   POST /api/webhooks/razorpay
+// @access  Public (but verified with Razorpay signature)
+const handleRazorpayWebhook = async (req, res) => {
+  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  const webhookSignature = req.headers['x-razorpay-signature'];
 
   try {
     // Verify webhook signature
-    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    const expectedSignature = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(JSON.stringify(req.body))
+      .digest('hex');
+
+    if (webhookSignature !== expectedSignature) {
+      console.error('Webhook signature verification failed');
+      return res.status(400).send('Webhook Error: Invalid signature');
+    }
+
+    const event = req.body.event;
+    const payload = req.body.payload;
+
+    // Handle the event
+    switch (event) {
+      case 'payment.captured':
+        await handlePaymentCaptured(payload.payment.entity);
+        break;
+
+      case 'payment.failed':
+        await handlePaymentFailed(payload.payment.entity);
+        break;
+
+      case 'order.paid':
+        await handleOrderPaid(payload.order.entity, payload.payment.entity);
+        break;
+
+      default:
+        console.log(`Unhandled event type ${event}`);
+    }
+
+    // Return a response to acknowledge receipt of the event
+    res.json({ status: 'ok' });
   } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
+    console.error('Webhook error:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
-
-  // Handle the event
-  switch (event.type) {
-    case 'payment_intent.succeeded':
-      await handlePaymentIntentSucceeded(event.data.object);
-      break;
-
-    case 'payment_intent.payment_failed':
-      await handlePaymentIntentFailed(event.data.object);
-      break;
-
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
-
-  // Return a response to acknowledge receipt of the event
-  res.json({ received: true });
 };
 
-// Handle successful payment
-const handlePaymentIntentSucceeded = async (paymentIntent) => {
+// Handle successful payment capture
+const handlePaymentCaptured = async (payment) => {
   try {
-    console.log('✅ Payment succeeded:', paymentIntent.id);
+    console.log('✅ Payment captured:', payment.id);
 
     // Check if order already exists (prevent duplicates)
     const existingOrder = await Order.findOne({
-      stripePaymentIntentId: paymentIntent.id,
+      razorpayPaymentId: payment.id,
     });
 
     if (existingOrder) {
-      console.log('Order already exists for this payment intent');
+      console.log('Order already exists for this payment');
       return;
     }
 
-    // Get order data from payment intent metadata
-    const orderData = JSON.parse(paymentIntent.metadata.orderData || '{}');
+    // Note: For webhook-based order creation, you would need to store
+    // order data somewhere accessible or retrieve from payment notes
+    // For now, we're handling order creation through the verify-payment endpoint
+    // This webhook is primarily for monitoring and backup
 
-    if (!orderData.customerId || !orderData.items) {
-      console.error('Invalid order data in payment intent metadata');
-      return;
-    }
-
-    // Validate items and recalculate total
-    const orderItems = await Promise.all(
-      orderData.items.map(async (item) => {
-        const menuItem = await MenuItem.findById(item.menuItemId);
-
-        if (!menuItem) {
-          throw new Error(`Menu item ${item.name} not found`);
-        }
-
-        if (!menuItem.isAvailable) {
-          throw new Error(`${menuItem.name} is currently unavailable`);
-        }
-
-        // Calculate price with customizations
-        let finalPrice = menuItem.price;
-        
-        if (item.customizations && menuItem.customizationOptions) {
-          menuItem.customizationOptions.forEach((option) => {
-            const selectedValue = item.customizations[option.name];
-            if (!selectedValue) return;
-
-            if (Array.isArray(selectedValue)) {
-              selectedValue.forEach((value) => {
-                const choice = option.choices.find((c) =>
-                  typeof c === 'string' ? c === value : c.name === value
-                );
-                if (choice && typeof choice === 'object' && choice.price) {
-                  finalPrice += choice.price;
-                }
-              });
-            } else {
-              const choice = option.choices.find((c) =>
-                typeof c === 'string' ? c === selectedValue : c.name === selectedValue
-              );
-              if (choice && typeof choice === 'object' && choice.price) {
-                finalPrice += choice.price;
-              }
-            }
-          });
-        }
-
-        return {
-          menuItem: menuItem._id,
-          name: menuItem.name,
-          price: finalPrice,
-          quantity: item.quantity,
-          customizations: item.customizations || {},
-          specialInstructions: item.specialInstructions || '',
-          subtotal: finalPrice * item.quantity,
-        };
-      })
-    );
-
-    // Calculate total
-    const calculatedTotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
-    const totalWithTax = calculatedTotal * 1.1;
-
-    // Verify amount matches (allow 1 cent difference for rounding)
-    const paidAmount = paymentIntent.amount / 100;
-    if (Math.abs(paidAmount - totalWithTax) > 0.01) {
-      console.error('Payment amount mismatch:', {
-        paid: paidAmount,
-        expected: totalWithTax,
-      });
-      // Still create order but flag it
-    }
-
-    // Calculate estimated pickup time
-    const maxPrepTime = Math.max(
-      ...orderItems.map(() => 15) // Default 15 min, could be calculated from items
-    );
-    const estimatedPickupTime = new Date(Date.now() + (maxPrepTime + 10) * 60000);
-
-    // Create order
-    const order = await Order.create({
-      customer: orderData.customerId,
-      items: orderItems,
-      totalAmount: paidAmount,
-      deliveryAddress: orderData.deliveryAddress,
-      stripePaymentIntentId: paymentIntent.id,
-      paymentStatus: 'paid',
-      paymentMethod: 'card',
-      status: 'received',
-      estimatedPickupTime,
-    });
-
-    console.log('✅ Order created:', order.orderNumber);
-
-    // TODO: Send email notification to customer
-    // TODO: Notify kitchen dashboard via WebSocket
-
+    console.log('Payment captured successfully, order should be created via verify-payment endpoint');
   } catch (error) {
-    console.error('Error handling successful payment:', error);
+    console.error('Error handling payment capture:', error);
   }
 };
 
 // Handle failed payment
-const handlePaymentIntentFailed = async (paymentIntent) => {
-  console.log('❌ Payment failed:', paymentIntent.id);
+const handlePaymentFailed = async (payment) => {
+  console.log('❌ Payment failed:', payment.id);
+  console.log('Reason:', payment.error_description);
   // TODO: Notify customer of failed payment
   // TODO: Log failure for analytics
 };
 
+// Handle order paid event
+const handleOrderPaid = async (order, payment) => {
+  try {
+    console.log('✅ Order paid:', order.id);
+    console.log('Payment ID:', payment.id);
+
+    // This is a backup - the main order creation happens in verify-payment endpoint
+    // You can add additional logic here if needed
+  } catch (error) {
+    console.error('Error handling order paid:', error);
+  }
+};
+
 module.exports = {
-  handleStripeWebhook,
+  handleRazorpayWebhook,
 };
