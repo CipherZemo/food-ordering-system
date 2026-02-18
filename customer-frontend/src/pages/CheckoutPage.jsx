@@ -1,35 +1,38 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { useCart } from "../context/CartContext";
 import { orderAPI } from "../services/api";
 import toast from "react-hot-toast";
-import {
-  CreditCard,
-  MapPin,
-  Loader,
-  AlertTriangle,
-  CheckCircle,
-} from "lucide-react";
+import { CreditCard, MapPin, Loader, AlertTriangle, CheckCircle } from "lucide-react";
+
+// Load Razorpay script
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  const stripe = useStripe();
-  const elements = useElements();
   const { items, cartTotal, clearCart } = useCart();
 
   const [loading, setLoading] = useState(false);
   const [processingStep, setProcessingStep] = useState("");
-  const [clientSecret, setClientSecret] = useState("");
-  const [paymentIntentId, setPaymentIntentId] = useState("");
+  const [razorpayOrderId, setRazorpayOrderId] = useState("");
+  const [razorpayKey, setRazorpayKey] = useState("");
   const [validatedTotal, setValidatedTotal] = useState(null);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
 
   const [deliveryAddress, setDeliveryAddress] = useState({
     street: "",
     city: "",
     state: "",
     zipCode: "",
-    country: "USA",
+    country: "India",
   });
 
   const [paymentError, setPaymentError] = useState(null);
@@ -61,39 +64,57 @@ const CheckoutPage = () => {
           city: user.address.city || "",
           state: user.address.state || "",
           zipCode: user.address.zipCode || "",
-          country: user.address.country || "USA",
+          country: user.address.country || "India",
         });
       }
     }
   }, [items, navigate]);
 
-  // Create PaymentIntent when component mounts
-
+  // Load Razorpay script
   useEffect(() => {
-    const createPaymentIntent = async () => {
+    const loadScript = async () => {
+      const res = await loadRazorpayScript();
+      if (!res) {
+        toast.error("Failed to load payment gateway. Please check your internet connection.");
+        setPaymentError({
+          type: "script_load_failed",
+          message: "Failed to load Razorpay. Please refresh the page.",
+        });
+      } else {
+        setScriptLoaded(true);
+      }
+    };
+    loadScript();
+  }, []);
+
+  // Create Razorpay Order when component mounts
+  useEffect(() => {
+    const createRazorpayOrder = async () => {
+      if (!scriptLoaded) return;
+
       try {
         setProcessingStep("Initializing payment...");
         const totalWithTax = cartTotal * 1.1;
 
-        const response = await orderAPI.createPaymentIntent(
+        const response = await orderAPI.createRazorpayOrder(
           totalWithTax,
           items,
-          deliveryAddress,
+          deliveryAddress
         );
 
-        setClientSecret(response.clientSecret);
-        setPaymentIntentId(response.paymentIntentId);
+        setRazorpayOrderId(response.orderId);
+        setRazorpayKey(response.key);
         setValidatedTotal(response.validatedTotal);
         setProcessingStep("");
         setPaymentError(null);
       } catch (error) {
-        console.error("Error creating payment intent:", error);
+        console.error("Error creating Razorpay order:", error);
 
         if (error.response?.data?.expectedTotal) {
           // Price mismatch - show expected total
           setPaymentError({
             type: "price_mismatch",
-            message: `Cart total changed. Expected: $${error.response.data.expectedTotal.toFixed(2)}`,
+            message: `Cart total changed. Expected: ₹${error.response.data.expectedTotal.toFixed(2)}`,
           });
           toast.error("Cart prices changed. Please review and try again.");
         } else if (error.response?.data?.message?.includes("unavailable")) {
@@ -113,10 +134,10 @@ const CheckoutPage = () => {
       }
     };
 
-    if (items.length > 0) {
-      createPaymentIntent();
+    if (items.length > 0 && scriptLoaded) {
+      createRazorpayOrder();
     }
-  }, [cartTotal, items, retryCount]);
+  }, [cartTotal, items, retryCount, scriptLoaded]);
 
   const handleAddressChange = (e) => {
     setDeliveryAddress({
@@ -130,13 +151,7 @@ const CheckoutPage = () => {
     setRetryCount(retryCount + 1);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!stripe || !elements) {
-      return;
-    }
-
+  const handlePayment = async () => {
     // Validate address
     if (
       !deliveryAddress.street ||
@@ -152,190 +167,129 @@ const CheckoutPage = () => {
       return;
     }
 
+    if (!razorpayOrderId || !razorpayKey) {
+      toast.error("Payment not initialized. Please refresh the page.");
+      return;
+    }
+
     setLoading(true);
-    setPaymentError(null);
+    setProcessingStep("Opening payment gateway...");
 
-    try {
-      setProcessingStep("Validating payment details...");
+    const userData = JSON.parse(localStorage.getItem("user") || "{}");
 
-      // Confirm payment with Stripe
-      const { error, paymentIntent } = await stripe.confirmCardPayment(
-        clientSecret,
-        {
-          payment_method: {
-            card: elements.getElement(CardElement),
-          },
+    const options = {
+      key: razorpayKey,
+      amount: Math.round(validatedTotal * 100), // Amount in paise
+      currency: "INR",
+      name: "Food Ordering System",
+      description: "Order Payment",
+      order_id: razorpayOrderId,
+      prefill: {
+        name: userData.name || "",
+        email: userData.email || "",
+        contact: userData.phone || "",
+      },
+      theme: {
+        color: "#ea580c", // Orange color matching your theme
+      },
+      handler: async function (response) {
+        setProcessingStep("Verifying payment...");
+
+        try {
+          // Verify payment on backend
+          const verifyResponse = await orderAPI.verifyPayment({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            items,
+            totalAmount: validatedTotal,
+            deliveryAddress,
+          });
+
+          if (verifyResponse.success) {
+            setProcessingStep("Payment successful! Creating order...");
+            clearCart();
+            toast.success("Order placed successfully!");
+            navigate(`/orders`);
+          } else {
+            throw new Error("Payment verification failed");
+          }
+        } catch (error) {
+          console.error("Payment verification error:", error);
+          toast.error("Payment verification failed. Please contact support.");
+          setPaymentError({
+            type: "verification_failed",
+            message: "Payment verification failed. Your payment is safe. Please contact support.",
+          });
+        } finally {
+          setLoading(false);
+          setProcessingStep("");
+        }
+      },
+      modal: {
+        ondismiss: function () {
+          setLoading(false);
+          setProcessingStep("");
+          toast.error("Payment cancelled");
         },
-      );
+      },
+    };
 
-      if (error) {
-        throw error;
-      }
+    const razorpay = new window.Razorpay(options);
 
-      // Handle different payment statuses
-      if (paymentIntent.status === "succeeded") {
-        setProcessingStep("Payment successful! Creating order...");
-
-        // Wait a moment for webhook to process
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-
-        // Fetch the order created by webhook
-        const orders = await orderAPI.getMyOrders();
-        const newOrder = orders.data.find(
-          (order) => order.stripePaymentIntentId === paymentIntent.id,
-        );
-
-        if (newOrder) {
-          clearCart();
-          toast.success("Order placed successfully!");
-          navigate(`/order-confirmation/${newOrder._id}`);
-        } else {
-          // Webhook hasn't processed yet, show waiting screen
-          toast.success("Payment successful! Processing your order...");
-          navigate("/orders");
-          clearCart();
-        }
-      } else if (paymentIntent.status === "requires_action") {
-        // 3D Secure authentication required
-        setProcessingStep("Additional authentication required...");
-
-        const { error: confirmError, paymentIntent: confirmedPaymentIntent } =
-          await stripe.confirmCardPayment(clientSecret);
-
-        if (confirmError) {
-          throw confirmError;
-        }
-
-        if (confirmedPaymentIntent.status === "succeeded") {
-          setProcessingStep("Payment successful! Creating order...");
-          clearCart();
-          toast.success("Order placed successfully!");
-          navigate("/orders");
-        }
-      } else {
-        throw new Error(`Unexpected payment status: ${paymentIntent.status}`);
-      }
-    } catch (error) {
-      console.error("Payment error:", error);
-
-      // Provide specific error messages
-      let errorMessage = "Payment failed. Please try again.";
-      let errorType = "generic";
-
-      if (error.type === "card_error") {
-        errorType = "card_error";
-        switch (error.code) {
-          case "card_declined":
-            errorMessage =
-              "Your card was declined. Please try a different card.";
-            break;
-          case "insufficient_funds":
-            errorMessage = "Insufficient funds. Please try a different card.";
-            break;
-          case "incorrect_cvc":
-            errorMessage = "Incorrect CVC code. Please check and try again.";
-            break;
-          case "expired_card":
-            errorMessage =
-              "Your card has expired. Please use a different card.";
-            break;
-          default:
-            errorMessage =
-              error.message || "Card error. Please try a different card.";
-        }
-      } else if (error.type === "validation_error") {
-        errorType = "validation_error";
-        errorMessage = "Please check your card details and try again.";
-      }
-
-      setPaymentError({ type: errorType, message: errorMessage });
-      toast.error(errorMessage);
-    } finally {
+    razorpay.on("payment.failed", function (response) {
       setLoading(false);
       setProcessingStep("");
-    }
-  };
 
-  const cardElementOptions = {
-    style: {
-      base: {
-        fontSize: "16px",
-        color: "#424770",
-        "::placeholder": {
-          color: "#aab7c4",
-        },
-      },
-      invalid: {
-        color: "#9e2146",
-      },
-    },
+      let errorMessage = "Payment failed. Please try again.";
+      if (response.error.description) {
+        errorMessage = response.error.description;
+      }
+
+      toast.error(errorMessage);
+      setPaymentError({
+        type: "payment_failed",
+        message: errorMessage,
+      });
+    });
+
+    razorpay.open();
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
       <h1 className="text-4xl font-bold text-gray-800 mb-8">Checkout</h1>
 
-      {/* Price Mismatch Warning */}
-      {paymentError?.type === "price_mismatch" && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 flex items-start space-x-3">
-          <AlertTriangle className="text-yellow-600 flex-shrink-0" size={24} />
-          <div className="flex-grow">
-            <h3 className="font-bold text-yellow-800 mb-1">Price Changed</h3>
-            <p className="text-yellow-700 text-sm mb-3">
-              {paymentError.message}
-            </p>
-            <button
-              onClick={() => navigate("/cart")}
-              className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition text-sm"
-            >
-              Review Cart
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Item Unavailable Warning */}
-      {paymentError?.type === "item_unavailable" && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start space-x-3">
-          <AlertTriangle className="text-red-600 flex-shrink-0" size={24} />
-          <div className="flex-grow">
-            <h3 className="font-bold text-red-800 mb-1">Item Unavailable</h3>
-            <p className="text-red-700 text-sm mb-3">{paymentError.message}</p>
-            <button
-              onClick={() => navigate("/cart")}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm"
-            >
-              Update Cart
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Payment Error with Retry */}
-      {paymentError &&
-        paymentError.type !== "price_mismatch" &&
-        paymentError.type !== "item_unavailable" && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start space-x-3">
-            <AlertTriangle className="text-red-600 flex-shrink-0" size={24} />
+      {/* Error Display */}
+      {paymentError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+          <div className="flex items-start space-x-3">
+            <AlertTriangle className="text-red-600 flex-shrink-0 mt-1" size={24} />
             <div className="flex-grow">
-              <h3 className="font-bold text-red-800 mb-1">Payment Failed</h3>
-              <p className="text-red-700 text-sm mb-3">
-                {paymentError.message}
-              </p>
+              <h3 className="text-lg font-semibold text-red-800 mb-2">
+                {paymentError.type === "price_mismatch" && "Price Mismatch Detected"}
+                {paymentError.type === "item_unavailable" && "Item Unavailable"}
+                {paymentError.type === "script_load_failed" && "Payment Gateway Error"}
+                {paymentError.type === "verification_failed" && "Verification Failed"}
+                {paymentError.type === "payment_failed" && "Payment Failed"}
+                {paymentError.type === "generic" && "Payment Error"}
+              </h3>
+              <p className="text-red-700">{paymentError.message}</p>
               <button
                 onClick={handleRetry}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm"
+                className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center space-x-2"
               >
                 Try Again
               </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Checkout Form */}
         <div className="lg:col-span-2">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-6">
             {/* Delivery Address */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex items-center space-x-2 mb-4">
@@ -371,7 +325,7 @@ const CheckoutPage = () => {
                     value={deliveryAddress.city}
                     onChange={handleAddressChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    placeholder="New York"
+                    placeholder="Mumbai"
                     required
                   />
                 </div>
@@ -386,7 +340,7 @@ const CheckoutPage = () => {
                     value={deliveryAddress.state}
                     onChange={handleAddressChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    placeholder="NY"
+                    placeholder="Maharashtra"
                     required
                   />
                 </div>
@@ -401,7 +355,7 @@ const CheckoutPage = () => {
                     value={deliveryAddress.zipCode}
                     onChange={handleAddressChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    placeholder="10001"
+                    placeholder="400001"
                     required
                   />
                 </div>
@@ -416,7 +370,7 @@ const CheckoutPage = () => {
                     value={deliveryAddress.country}
                     onChange={handleAddressChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    placeholder="USA"
+                    placeholder="India"
                     required
                   />
                 </div>
@@ -432,12 +386,28 @@ const CheckoutPage = () => {
                 </h2>
               </div>
 
-              <div className="border border-gray-300 rounded-lg p-4">
-                <CardElement options={cardElementOptions} />
+              <div className="bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-lg p-6">
+                <div className="flex items-start space-x-3">
+                  <CheckCircle className="text-orange-600 flex-shrink-0 mt-1" size={24} />
+                  <div>
+                    <h3 className="font-semibold text-gray-800 mb-2">
+                      Secure Payment with Razorpay
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3">
+                      You'll be redirected to Razorpay's secure payment page where you can pay using:
+                    </p>
+                    <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                      <li>Credit/Debit Cards</li>
+                      <li>UPI (Google Pay, PhonePe, Paytm, etc.)</li>
+                      <li>Net Banking</li>
+                      <li>Wallets</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
 
               <p className="text-sm text-gray-500 mt-3">
-                Your payment information is secure and encrypted.
+                🔒 Your payment information is secure and encrypted by Razorpay.
               </p>
             </div>
 
@@ -451,12 +421,12 @@ const CheckoutPage = () => {
               </div>
             )}
 
-            {/* Submit Button */}
+            {/* Pay Button */}
             <button
-              type="submit"
-              disabled={!stripe || loading || !!paymentError}
+              onClick={handlePayment}
+              disabled={loading || !!paymentError || !scriptLoaded}
               className={`w-full py-4 rounded-lg font-bold text-white text-lg transition flex items-center justify-center space-x-2 ${
-                !stripe || loading || paymentError
+                loading || paymentError || !scriptLoaded
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-orange-600 hover:bg-orange-700"
               }`}
@@ -468,14 +438,14 @@ const CheckoutPage = () => {
                 </>
               ) : (
                 <span>
-                  Place Order - $
+                  Pay ₹
                   {validatedTotal
                     ? validatedTotal.toFixed(2)
                     : (cartTotal * 1.1).toFixed(2)}
                 </span>
               )}
             </button>
-          </form>
+          </div>
         </div>
 
         {/* Order Summary */}
@@ -500,14 +470,14 @@ const CheckoutPage = () => {
                       <p className="text-xs text-gray-500">
                         {Object.entries(item.customizations)
                           .map(([key, value]) =>
-                            Array.isArray(value) ? value.join(", ") : value,
+                            Array.isArray(value) ? value.join(", ") : value
                           )
                           .join(" • ")}
                       </p>
                     )}
                   </div>
                   <span className="text-gray-600 ml-2">
-                    ${(item.finalPrice * item.quantity).toFixed(2)}
+                    ₹{(item.finalPrice * item.quantity).toFixed(2)}
                   </span>
                 </div>
               ))}
@@ -517,25 +487,25 @@ const CheckoutPage = () => {
             <div className="space-y-3 border-t pt-4">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
-                <span>${cartTotal.toFixed(2)}</span>
+                <span>₹{cartTotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Tax (10%)</span>
-                <span>${(cartTotal * 0.1).toFixed(2)}</span>
+                <span>₹{(cartTotal * 0.1).toFixed(2)}</span>
               </div>
               {validatedTotal &&
                 Math.abs(validatedTotal - cartTotal * 1.1) > 0.01 && (
                   <div className="flex items-center justify-between text-sm text-yellow-600 bg-yellow-50 p-2 rounded">
                     <span>Server-validated total</span>
                     <span className="font-bold">
-                      ${validatedTotal.toFixed(2)}
+                      ₹{validatedTotal.toFixed(2)}
                     </span>
                   </div>
                 )}
               <div className="flex justify-between text-xl font-bold text-gray-800 border-t pt-3">
                 <span>Total</span>
                 <span>
-                  $
+                  ₹
                   {validatedTotal
                     ? validatedTotal.toFixed(2)
                     : (cartTotal * 1.1).toFixed(2)}

@@ -86,8 +86,8 @@ export const authAPI = {
 
 // Order API
 export const orderAPI = {
-  createPaymentIntent: async (amount, items, deliveryAddress) => {
-    const response = await api.post('/orders/create-payment-intent', {
+  createRazorpayOrder: async (amount, items, deliveryAddress) => {
+    const response = await api.post('/orders/create-razorpay-order', {
       amount,
       items,
       deliveryAddress,
@@ -95,8 +95,8 @@ export const orderAPI = {
     return response.data;
   },
 
-  createOrder: async (orderData) => {
-    const response = await api.post('/orders', orderData);
+  verifyPayment: async (paymentData) => {
+    const response = await api.post('/orders/verify-payment', paymentData);
     return response.data;
   },
 
