@@ -6,6 +6,6 @@ const { getAllMenuItems,getMenuItemById }= require('../controllers/menuControlle
 // GET /api/menu
 router.get('/',getAllMenuItems);
 // GET /api/menu
-router.get('/:i',getMenuItemById);
+router.get('/:id',getMenuItemById);
 
 module.exports=router;
