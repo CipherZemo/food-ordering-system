@@ -240,6 +240,16 @@ const verifyPayment = async (req, res) => {
 
     // Populate order with menu item details
     await order.populate('items.menuItem');
+    
+// ✅ EMIT SOCKET EVENT FOR REAL-TIME DASHBOARD UPDATE
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new_order', {
+        order: order,
+        message: `New order #${order.orderNumber} received!`,
+      });
+      console.log('📡 New order emitted to kitchen dashboard');
+    }
 
     res.status(201).json({
       success: true,
