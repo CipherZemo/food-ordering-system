@@ -66,6 +66,16 @@ const updateOrderStatus = async (req, res) => {
     await order.populate('customer', 'name email phone');
     await order.populate('items.menuItem');
 
+// ✅ EMIT SOCKET EVENT FOR ORDER STATUS UPDATE
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('order_updated', {
+        order: order,
+        message: `Order #${order.orderNumber} status updated to ${status}`,
+      });
+      console.log(`📡 Order status update emitted: ${order.orderNumber} → ${status}`);
+    }
+
     res.status(200).json({
       success: true,
       message: 'Order status updated successfully',
