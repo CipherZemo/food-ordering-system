@@ -1,26 +1,40 @@
-import { createContext, useContext, useReducer, useEffect, useRef } from 'react';
+import {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useRef,
+} from "react";
 
 const CartContext = createContext();
 
 // Action types
 const CART_ACTIONS = {
-  ADD_ITEM: 'ADD_ITEM',
-  REMOVE_ITEM: 'REMOVE_ITEM',
-  UPDATE_QUANTITY: 'UPDATE_QUANTITY',
-  CLEAR_CART: 'CLEAR_CART',
-  LOAD_CART: 'LOAD_CART',
+  ADD_ITEM: "ADD_ITEM",
+  REMOVE_ITEM: "REMOVE_ITEM",
+  UPDATE_QUANTITY: "UPDATE_QUANTITY",
+  CLEAR_CART: "CLEAR_CART",
+  LOAD_CART: "LOAD_CART",
 };
 
 // Helper function to generate unique cart item ID based on customizations and instructions
-const generateCartItemId = (menuItemId, customizations, specialInstructions) => {
+const generateCartItemId = (
+  menuItemId,
+  customizations,
+  specialInstructions,
+) => {
   const customizationString = JSON.stringify(customizations || {});
-  const instructionsString = specialInstructions || '';
+  const instructionsString = specialInstructions || "";
   const combinedString = `${customizationString}-${instructionsString}`;
   return `${menuItemId}-${btoa(combinedString)}`; // Base64 encode for unique ID
 };
 
 // Calculate item price with customizations
-const calculateItemPrice = (basePrice, customizationOptions, selectedCustomizations) => {
+const calculateItemPrice = (
+  basePrice,
+  customizationOptions,
+  selectedCustomizations,
+) => {
   let totalPrice = basePrice;
 
   if (!customizationOptions || !selectedCustomizations) {
@@ -29,25 +43,25 @@ const calculateItemPrice = (basePrice, customizationOptions, selectedCustomizati
 
   customizationOptions.forEach((option) => {
     const selectedValue = selectedCustomizations[option.name];
-    
+
     if (!selectedValue) return;
 
     // Handle array selections (multiple choices like toppings)
     if (Array.isArray(selectedValue)) {
       selectedValue.forEach((value) => {
-        const choice = option.choices.find((c) => 
-          typeof c === 'string' ? c === value : c.name === value
+        const choice = option.choices.find((c) =>
+          typeof c === "string" ? c === value : c.name === value,
         );
-        if (choice && typeof choice === 'object' && choice.price) {
+        if (choice && typeof choice === "object" && choice.price) {
           totalPrice += choice.price;
         }
       });
     } else {
       // Handle single selection (like size)
-      const choice = option.choices.find((c) => 
-        typeof c === 'string' ? c === selectedValue : c.name === selectedValue
+      const choice = option.choices.find((c) =>
+        typeof c === "string" ? c === selectedValue : c.name === selectedValue,
       );
-      if (choice && typeof choice === 'object' && choice.price) {
+      if (choice && typeof choice === "object" && choice.price) {
         totalPrice += choice.price;
       }
     }
@@ -60,17 +74,22 @@ const calculateItemPrice = (basePrice, customizationOptions, selectedCustomizati
 const cartReducer = (state, action) => {
   switch (action.type) {
     case CART_ACTIONS.ADD_ITEM: {
-      const { menuItem, customizations, quantity, specialInstructions } = action.payload;
-      const cartItemId = generateCartItemId(menuItem._id, customizations, specialInstructions);
+      const { menuItem, customizations, quantity, specialInstructions } =
+        action.payload;
+      const cartItemId = generateCartItemId(
+        menuItem._id,
+        customizations,
+        specialInstructions,
+      );
 
       const existingItemIndex = state.items.findIndex(
-        (item) => item.cartItemId === cartItemId
+        (item) => item.cartItemId === cartItemId,
       );
 
       const finalPrice = calculateItemPrice(
         menuItem.price,
         menuItem.customizationOptions,
-        customizations
+        customizations,
       );
 
       if (existingItemIndex > -1) {
@@ -87,7 +106,7 @@ const cartReducer = (state, action) => {
           cartItemId,
           ...menuItem,
           customizations: customizations || {},
-          specialInstructions: specialInstructions || '',
+          specialInstructions: specialInstructions || "",
           quantity,
           finalPrice,
         };
@@ -109,7 +128,7 @@ const cartReducer = (state, action) => {
       const updatedItems = state.items.map((item) =>
         item.cartItemId === action.payload.id
           ? { ...item, quantity: action.payload.quantity }
-          : item
+          : item,
       );
 
       // Remove items with quantity 0
@@ -143,7 +162,7 @@ const cartReducer = (state, action) => {
 // Load cart from localStorage
 const getInitialState = () => {
   try {
-    const savedCart = localStorage.getItem('cart');
+    const savedCart = localStorage.getItem("cart");
     if (savedCart) {
       const parsed = JSON.parse(savedCart);
       // Handle if saved data is just an array (old format)
@@ -154,7 +173,7 @@ const getInitialState = () => {
       return parsed.items ? parsed : { items: [] };
     }
   } catch (error) {
-    console.error('Error loading cart:', error);
+    console.error("Error loading cart:", error);
   }
   return { items: [] };
 };
@@ -162,26 +181,34 @@ const getInitialState = () => {
 // Cart Provider Component
 export const CartProvider = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, getInitialState());
-const isInitialMount = useRef(true);
+  const isInitialMount = useRef(true);
 
-useEffect(() => {
-  if (isInitialMount.current) {
-    isInitialMount.current = false;
-    return; // Skip saving on first render
-  }
-  localStorage.setItem('cart', JSON.stringify(state.items));
-}, [state.items]);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return; // Skip saving on first render
+    }
+    localStorage.setItem("cart", JSON.stringify(state.items));
+  }, [state.items]);
 
   // Computed values
-const cartItemCount = state.items.reduce((total, item) => total + item.quantity, 0);
+  const cartItemCount = state.items.reduce(
+    (total, item) => total + item.quantity,
+    0,
+  );
 
-const cartTotal = state.items.reduce(
-  (total, item) => total + item.finalPrice * item.quantity,
-  0
-);
+  const cartTotal = state.items.reduce(
+    (total, item) => total + item.finalPrice * item.quantity,
+    0,
+  );
 
   // Actions
-  const addToCart = (menuItem, customizations = {}, quantity = 1, specialInstructions = '') => {
+  const addToCart = (
+    menuItem,
+    customizations = {},
+    quantity = 1,
+    specialInstructions = "",
+  ) => {
     dispatch({
       type: CART_ACTIONS.ADD_ITEM,
       payload: { menuItem, customizations, quantity, specialInstructions },
@@ -220,7 +247,7 @@ const cartTotal = state.items.reduce(
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {
-    throw new Error('useCart must be used within a CartProvider');
+    throw new Error("useCart must be used within a CartProvider");
   }
   return context;
 };
