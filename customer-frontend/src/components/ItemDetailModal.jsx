@@ -128,7 +128,7 @@ const ItemDetailModal = ({ item, isOpen, onClose, onAddToCart }) => {
             <p className="text-gray-700 leading-relaxed">{item.description}</p>
             <div className="flex items-center justify-between mt-3">
               <span className="text-2xl font-bold text-orange-600">
-                ${item.price.toFixed(2)}
+                ₹{item.price.toFixed(2)}
               </span>
               <span className="text-sm text-gray-500">🕐 {item.preparationTime} min</span>
             </div>
@@ -266,7 +266,7 @@ const ItemDetailModal = ({ item, isOpen, onClose, onAddToCart }) => {
                             </div>
                             {choicePrice > 0 && (
                               <span className="text-sm text-gray-600">
-                                +${choicePrice.toFixed(2)}
+                                +₹{choicePrice.toFixed(2)}
                               </span>
                             )}
                           </label>
@@ -313,7 +313,7 @@ const ItemDetailModal = ({ item, isOpen, onClose, onAddToCart }) => {
           <div className="flex items-center justify-between text-xl font-bold border-t pt-6">
             <span className="text-gray-800">Total</span>
             <span className="text-orange-600">
-              ${(totalPrice * quantity).toFixed(2)}
+              ₹{(totalPrice * quantity).toFixed(2)}
             </span>
           </div>
 
