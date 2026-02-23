@@ -1,8 +1,8 @@
-import { Plus } from 'lucide-react';
+import { Plus } from "lucide-react";
 
 const MenuItem = ({ item, onAddToCart }) => {
   return (
-    <div 
+    <div
       onClick={() => onAddToCart(item)}
       className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer"
     >
@@ -20,7 +20,7 @@ const MenuItem = ({ item, onAddToCart }) => {
         <div className="flex items-start justify-between mb-2">
           <h3 className="text-lg font-bold text-gray-800">{item.name}</h3>
           <span className="text-orange-600 font-bold text-lg">
-            ${item.price.toFixed(2)}
+            ₹{item.price.toFixed(2)}
           </span>
         </div>
 
@@ -31,7 +31,7 @@ const MenuItem = ({ item, onAddToCart }) => {
         {/* Category Badge */}
         <div className="flex items-center justify-between mb-3">
           <span className="inline-block bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full font-medium">
-            {item.category.replace('-', ' ')}
+            {item.category.replace("-", " ")}
           </span>
           <span className="text-xs text-gray-500">
             🕐 {item.preparationTime} min
