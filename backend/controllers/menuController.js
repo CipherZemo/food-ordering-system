@@ -4,7 +4,7 @@ const MenuItem = require('../models/MenuItem');
 // @access  Public
 const getAllMenuItems = async (req, res) => {
     try {
-        const { category, available } = req.body;
+        const { category, available } = req.query;
 
         let filter = {};// Build filter object
         if (category)
@@ -19,8 +19,8 @@ const getAllMenuItems = async (req, res) => {
             data: menuItems,
         });
 
-    }catch(err){
-        console.error("Error fetching menu items - " ,err);
+    } catch (err) {
+        console.error("Error fetching menu items - ", err);
         res.status(500).json({
             success: false,
             message: 'Server error',
@@ -31,11 +31,11 @@ const getAllMenuItems = async (req, res) => {
 // @desc    Get single menu item by ID
 // @route   GET /api/menu/:id
 // @access  Public
-const getMenuItemById= async (req,res)=>{
-    try{
-        const menuItems= await MenuItem.findById(req.params.id);
+const getMenuItemById = async (req, res) => {
+    try {
+        const menuItems = await MenuItem.findById(req.params.id);
 
-        if(!menuItems){
+        if (!menuItems) {
             return res.status(404).json({
                 success: false,
                 message: 'menu item not found'
@@ -47,25 +47,25 @@ const getMenuItemById= async (req,res)=>{
             data: menuItems,
         });
 
-    }catch(err){
-    console.error('Error fetching menu item:', err);
-    
-    // Handle invalid ObjectId format
-    if (err.kind === 'ObjectId') {
-      return res.status(404).json({
-        success: false,
-        message: 'Menu item not found',
-      });
-    }
+    } catch (err) {
+        console.error('Error fetching menu item:', err);
 
-    res.status(500).json({
-      success: false,
-      message: 'Server error while fetching menu item',
-      error: err.message,
-    });
-  }
+        // Handle invalid ObjectId format
+        if (err.kind === 'ObjectId') {
+            return res.status(404).json({
+                success: false,
+                message: 'Menu item not found',
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Server error while fetching menu item',
+            error: err.message,
+        });
+    }
 };
 
 
 
-module.exports={ getAllMenuItems,getMenuItemById };
+module.exports = { getAllMenuItems, getMenuItemById };
