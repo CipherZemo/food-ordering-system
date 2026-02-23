@@ -54,65 +54,65 @@ const DashboardPage = () => {
     };
   }, []);
 
-      // Socket.io connection for real-time updates
-    useEffect(() => {
-      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-      const socket = io(API_URL.replace("/api", ""));
+  // Socket.io connection for real-time updates
+  useEffect(() => {
+    const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const socket = io(API_URL.replace("/api", ""));
 
-      // Connection established
-      socket.on("connect", () => {
-        console.log("✅ Connected to kitchen dashboard socket");
-        setSocketConnected(true);
-        toast.success("Connected to real-time updates");
+    // Connection established
+    socket.on("connect", () => {
+      console.log("✅ Connected to kitchen dashboard socket");
+      setSocketConnected(true);
+      toast.success("Connected to real-time updates");
+    });
+
+    // Connection lost
+    socket.on("disconnect", () => {
+      console.log("❌ Disconnected from socket");
+      setSocketConnected(false);
+      toast.error("Lost connection to server");
+    });
+
+    // Listen for new orders
+    socket.on("new_order", (data) => {
+      console.log("📦 New order received:", data.order);
+
+      // Play notification sound
+      if (audioRef.current) {
+        audioRef.current
+          .play()
+          .catch((err) => console.log("Sound play failed:", err));
+      }
+
+      // Show toast notification
+      toast.success(`🎉 ${data.message}`, {
+        duration: 5000,
       });
 
-      // Connection lost
-      socket.on("disconnect", () => {
-        console.log("❌ Disconnected from socket");
-        setSocketConnected(false);
-        toast.error("Lost connection to server");
-      });
+      // Add order to state
+      setOrders((prevOrders) => [data.order, ...prevOrders]);
+    });
 
-      // Listen for new orders
-      socket.on("new_order", (data) => {
-        console.log("📦 New order received:", data.order);
+    // Listen for order updates
+    socket.on("order_updated", (data) => {
+      console.log("🔄 Order updated:", data.order);
 
-        // Play notification sound
-        if (audioRef.current) {
-          audioRef.current
-            .play()
-            .catch((err) => console.log("Sound play failed:", err));
-        }
+      // Show toast notification
+      toast(data.message);
 
-        // Show toast notification
-        toast.success(`🎉 ${data.message}`, {
-          duration: 5000,
-        });
+      // Update order in state
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order._id === data.order._id ? data.order : order,
+        ),
+      );
+    });
 
-        // Add order to state
-        setOrders((prevOrders) => [data.order, ...prevOrders]);
-      });
-
-      // Listen for order updates
-      socket.on("order_updated", (data) => {
-        console.log("🔄 Order updated:", data.order);
-
-        // Show toast notification
-        toast.info(data.message);
-
-        // Update order in state
-        setOrders((prevOrders) =>
-          prevOrders.map((order) =>
-            order._id === data.order._id ? data.order : order,
-          ),
-        );
-      });
-
-      // Cleanup on unmount
-      return () => {
-        socket.disconnect();
-      };
-    }, []);
+    // Cleanup on unmount
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     filterOrders();
