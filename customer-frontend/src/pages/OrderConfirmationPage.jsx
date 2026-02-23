@@ -127,7 +127,7 @@ const OrderConfirmationPage = () => {
                     )}
                   </div>
                   <span className="font-bold text-gray-800">
-                    ${item.subtotal.toFixed(2)}
+                    ₹{item.subtotal.toFixed(2)}
                   </span>
                 </div>
               ))}
@@ -151,7 +151,7 @@ const OrderConfirmationPage = () => {
               </div>
               <div className="border-t pt-3 flex justify-between text-xl font-bold text-gray-800">
                 <span>Total</span>
-                <span>${order.totalAmount.toFixed(2)}</span>
+                <span>₹{order.totalAmount.toFixed(2)}</span>
               </div>
             </div>
 

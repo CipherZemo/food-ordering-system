@@ -190,10 +190,10 @@ const CartPage = () => {
                   )}
 
                   <p className="text-gray-600 text-sm mt-2">
-                    ${item.finalPrice.toFixed(2)} each
+                    ₹{item.finalPrice.toFixed(2)} each
                   </p>
                   <p className="text-orange-600 font-medium mt-1">
-                    Subtotal: ${(item.finalPrice * item.quantity).toFixed(2)}
+                    Subtotal: ₹{(item.finalPrice * item.quantity).toFixed(2)}
                   </p>
                 </div>
 
@@ -234,15 +234,15 @@ const CartPage = () => {
                     Items ({items.reduce((sum, item) => sum + item.quantity, 0)}
                     )
                   </span>
-                  <span>${cartTotal.toFixed(2)}</span>
+                  <span>₹{cartTotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Tax (10%)</span>
-                  <span>${(cartTotal * 0.1).toFixed(2)}</span>
+                  <span>₹{(cartTotal * 0.1).toFixed(2)}</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between text-xl font-bold text-gray-800">
                   <span>Total</span>
-                  <span>${(cartTotal * 1.1).toFixed(2)}</span>
+                  <span>₹{(cartTotal * 1.1).toFixed(2)}</span>
                 </div>
               </div>
 

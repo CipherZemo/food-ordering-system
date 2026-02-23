@@ -1,14 +1,14 @@
-import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { authAPI } from '../services/api';
-import toast from 'react-hot-toast';
+import { useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { authAPI } from "../services/api";
+import toast from "react-hot-toast";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +23,7 @@ const LoginPage = () => {
     e.preventDefault();
 
     if (!formData.email || !formData.password) {
-      toast.error('Please fill in all fields');
+      toast.error("Please fill in all fields");
       return;
     }
 
@@ -32,17 +32,18 @@ const LoginPage = () => {
       const response = await authAPI.login(formData);
 
       // Store token and user data
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('user', JSON.stringify(response.data));
+      localStorage.setItem("token", response.token);
+      localStorage.setItem("user", JSON.stringify(response.data));
+      // Trigger custom event to update Navbar
+      window.dispatchEvent(new Event("userLogin"));
+      toast.success("Login successful!");
 
-      toast.success('Login successful!');
-      
       // Redirect to return URL or home
-      const returnUrl = searchParams.get('returnUrl') || '/';
+      const returnUrl = searchParams.get("returnUrl") || "/";
       navigate(returnUrl);
     } catch (error) {
-      console.error('Login error:', error);
-      toast.error(error.response?.data?.message || 'Login failed');
+      console.error("Login error:", error);
+      toast.error(error.response?.data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -51,7 +52,9 @@ const LoginPage = () => {
   return (
     <div className="container mx-auto px-4 py-16">
       <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">Login</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
+          Login
+        </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email */}
@@ -92,18 +95,21 @@ const LoginPage = () => {
             disabled={loading}
             className={`w-full py-3 rounded-lg font-bold text-white transition ${
               loading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-orange-600 hover:bg-orange-700'
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-orange-600 hover:bg-orange-700"
             }`}
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
         {/* Register Link */}
         <p className="text-center text-gray-600 mt-6">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-orange-600 hover:text-orange-700 font-medium">
+          Don't have an account?{" "}
+          <Link
+            to="/register"
+            className="text-orange-600 hover:text-orange-700 font-medium"
+          >
             Register here
           </Link>
         </p>

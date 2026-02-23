@@ -180,7 +180,7 @@ const OrdersPage = () => {
               <div className="flex items-center justify-between border-t pt-4">
                 <span className="text-gray-700 font-medium">Total</span>
                 <span className="text-2xl font-bold text-orange-600">
-                  ${order.totalAmount.toFixed(2)}
+                  ₹{order.totalAmount.toFixed(2)}
                 </span>
               </div>
             </div>
