@@ -95,14 +95,13 @@ const orderSchema = new mongoose.Schema(
 );
 
 // Generate order number before saving
-orderSchema.pre('save', async function (next) {
+orderSchema.pre('save', async function () {
   if (this.isNew) {
     const date = new Date();
     const dateString = date.toISOString().slice(0, 10).replace(/-/g, '');
     const randomString = Math.random().toString(36).substring(2, 8).toUpperCase();
     this.orderNumber = `ORD-${dateString}-${randomString}`;
   }
-  next();
 });
 
 module.exports = mongoose.model('Order', orderSchema);
