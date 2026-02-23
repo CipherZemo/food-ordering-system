@@ -108,7 +108,7 @@ const createRazorpayOrder = async (req, res) => {
     const razorpayOrder = await razorpay.orders.create({
       amount: Math.round(serverTotalWithTax * 100), // Razorpay expects amount in paise (smallest currency unit)
       currency: 'INR',
-      receipt: `receipt_${req.user._id}_${Date.now()}`,
+      receipt: `rcpt_${Date.now()}`,
       notes: {
         customerId: req.user._id.toString(),
         customerEmail: req.user.email,
@@ -223,8 +223,14 @@ const verifyPayment = async (req, res) => {
     else if (payment.method === 'netbanking') paymentMethod = 'netbanking';
     else if (payment.method === 'wallet') paymentMethod = 'wallet';
 
+    const date = new Date();
+    const dateString = date.toISOString().slice(0, 10).replace(/-/g, '');
+    const randomString = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const orderNumber = `ORD-${dateString}-${randomString}`;
+
     // Create order
     const order = await Order.create({
+      orderNumber,
       customer: req.user._id,
       items: orderItems,
       totalAmount,
@@ -240,8 +246,8 @@ const verifyPayment = async (req, res) => {
 
     // Populate order with menu item details
     await order.populate('items.menuItem');
-    
-// ✅ EMIT SOCKET EVENT FOR REAL-TIME DASHBOARD UPDATE
+
+    // ✅ EMIT SOCKET EVENT FOR REAL-TIME DASHBOARD UPDATE
     const io = req.app.get('io');
     if (io) {
       io.emit('new_order', {
@@ -327,4 +333,4 @@ const getOrderById = async (req, res) => {
   }
 };
 
-module.exports = { createRazorpayOrder,verifyPayment,getMyOrders,getOrderById, };
+module.exports = { createRazorpayOrder, verifyPayment, getMyOrders, getOrderById, };
