@@ -244,6 +244,7 @@ const verifyPayment = async (req, res) => {
       estimatedPickupTime,
     });
 
+    
     // Populate order with menu item details
     await order.populate('items.menuItem');
 
