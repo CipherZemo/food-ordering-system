@@ -1,7 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, Menu, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
+import { Link, useNavigate } from "react-router-dom";
+import { ShoppingCart, User, LogOut, Menu, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 
 const Navbar = ({ cartItemCount }) => {
   const navigate = useNavigate();
@@ -9,20 +9,31 @@ const Navbar = ({ cartItemCount }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
+    // Function to check user status
+    const checkUser = () => {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        setUser(JSON.parse(userData));
+      } else {
+        setUser(null);
+      }
+    };
+    checkUser(); // Check on mount
+    window.addEventListener("userLogin", checkUser); // Listen for login events
+
+    // Cleanup
+    return () => {
+      window.removeEventListener("userLogin", checkUser);
+    };
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setUser(null);
     setMobileMenuOpen(false);
-    toast.success('Logged out successfully');
-    navigate('/');
+    toast.success("Logged out successfully");
+    navigate("/");
   };
 
   const closeMobileMenu = () => {
@@ -34,21 +45,33 @@ const Navbar = ({ cartItemCount }) => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="text-2xl font-bold hover:text-orange-100 transition">
+          <Link
+            to="/"
+            className="text-2xl font-bold hover:text-orange-100 transition"
+          >
             🍕 FoodHub
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
-            <Link to="/" className="hover:text-orange-100 transition font-medium">
+            <Link
+              to="/"
+              className="hover:text-orange-100 transition font-medium"
+            >
               Menu
             </Link>
-            <Link to="/orders" className="hover:text-orange-100 transition font-medium">
+            <Link
+              to="/orders"
+              className="hover:text-orange-100 transition font-medium"
+            >
               My Orders
             </Link>
 
             {/* Cart Icon with Badge */}
-            <Link to="/cart" className="relative hover:text-orange-100 transition">
+            <Link
+              to="/cart"
+              className="relative hover:text-orange-100 transition"
+            >
               <ShoppingCart size={24} />
               {cartItemCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
@@ -60,7 +83,10 @@ const Navbar = ({ cartItemCount }) => {
             {/* User Menu */}
             {user ? (
               <div className="flex items-center space-x-4">
-                <Link to="/profile" className="hover:text-orange-100 transition">
+                <Link
+                  to="/profile"
+                  className="hover:text-orange-100 transition"
+                >
                   <User size={24} />
                 </Link>
                 <button
