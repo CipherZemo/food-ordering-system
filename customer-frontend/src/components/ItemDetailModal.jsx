@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import { X, Plus, Minus, AlertTriangle } from 'lucide-react';
-import QuantityControl from './QuantityControl';
+import { useState, useEffect } from "react";
+import { X, Plus, Minus, AlertTriangle } from "lucide-react";
+import QuantityControl from "./QuantityControl";
 
 const ItemDetailModal = ({ item, isOpen, onClose, onAddToCart }) => {
   const [quantity, setQuantity] = useState(1);
   const [customizations, setCustomizations] = useState({});
-  const [specialInstructions, setSpecialInstructions] = useState('');
+  const [specialInstructions, setSpecialInstructions] = useState("");
   const [totalPrice, setTotalPrice] = useState(item.price);
 
   useEffect(() => {
@@ -16,13 +16,13 @@ const ItemDetailModal = ({ item, isOpen, onClose, onAddToCart }) => {
         if (option.required && option.choices.length > 0) {
           // Set first choice as default for required options
           const firstChoice = option.choices[0];
-          initialCustomizations[option.name] = 
-            typeof firstChoice === 'string' ? firstChoice : firstChoice.name;
+          initialCustomizations[option.name] =
+            typeof firstChoice === "string" ? firstChoice : firstChoice.name;
         }
       });
       setCustomizations(initialCustomizations);
       setQuantity(1);
-      setSpecialInstructions('');
+      setSpecialInstructions("");
     }
   }, [isOpen, item]);
 
@@ -42,18 +42,20 @@ const ItemDetailModal = ({ item, isOpen, onClose, onAddToCart }) => {
       if (Array.isArray(selectedValue)) {
         selectedValue.forEach((value) => {
           const choice = option.choices.find((c) =>
-            typeof c === 'string' ? c === value : c.name === value
+            typeof c === "string" ? c === value : c.name === value,
           );
-          if (choice && typeof choice === 'object' && choice.price) {
+          if (choice && typeof choice === "object" && choice.price) {
             price += choice.price;
           }
         });
       } else {
         // Handle single selection (radio)
         const choice = option.choices.find((c) =>
-          typeof c === 'string' ? c === selectedValue : c.name === selectedValue
+          typeof c === "string"
+            ? c === selectedValue
+            : c.name === selectedValue,
         );
-        if (choice && typeof choice === 'object' && choice.price) {
+        if (choice && typeof choice === "object" && choice.price) {
           price += choice.price;
         }
       }
@@ -84,7 +86,7 @@ const ItemDetailModal = ({ item, isOpen, onClose, onAddToCart }) => {
   const handleAddToCart = () => {
     // Validate required fields
     const missingRequired = item.customizationOptions?.find(
-      (option) => option.required && !customizations[option.name]
+      (option) => option.required && !customizations[option.name],
     );
 
     if (missingRequired) {
@@ -130,7 +132,9 @@ const ItemDetailModal = ({ item, isOpen, onClose, onAddToCart }) => {
               <span className="text-2xl font-bold text-orange-600">
                 ₹{item.price.toFixed(2)}
               </span>
-              <span className="text-sm text-gray-500">🕐 {item.preparationTime} min</span>
+              <span className="text-sm text-gray-500">
+                🕐 {item.preparationTime} min
+              </span>
             </div>
           </div>
 
@@ -138,9 +142,14 @@ const ItemDetailModal = ({ item, isOpen, onClose, onAddToCart }) => {
           {item.allergens && item.allergens.length > 0 && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex items-start space-x-2">
-                <AlertTriangle className="text-yellow-600 flex-shrink-0 mt-0.5" size={20} />
+                <AlertTriangle
+                  className="text-yellow-600 flex-shrink-0 mt-0.5"
+                  size={20}
+                />
                 <div>
-                  <h3 className="font-semibold text-yellow-800 mb-2">Allergen Warning</h3>
+                  <h3 className="font-semibold text-yellow-800 mb-2">
+                    Allergen Warning
+                  </h3>
                   <div className="flex flex-wrap gap-2">
                     {item.allergens.map((allergen, index) => (
                       <span
@@ -159,7 +168,9 @@ const ItemDetailModal = ({ item, isOpen, onClose, onAddToCart }) => {
           {/* Ingredients */}
           {item.ingredients && item.ingredients.length > 0 && (
             <div>
-              <h3 className="text-lg font-bold text-gray-800 mb-2">Ingredients</h3>
+              <h3 className="text-lg font-bold text-gray-800 mb-2">
+                Ingredients
+              </h3>
               <div className="flex flex-wrap gap-2">
                 {item.ingredients.map((ingredient, index) => (
                   <span
@@ -176,7 +187,9 @@ const ItemDetailModal = ({ item, isOpen, onClose, onAddToCart }) => {
           {/* Nutritional Information */}
           {item.nutritionalInfo && (
             <div>
-              <h3 className="text-lg font-bold text-gray-800 mb-3">Nutritional Information</h3>
+              <h3 className="text-lg font-bold text-gray-800 mb-3">
+                Nutritional Information
+              </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {item.nutritionalInfo.calories && (
                   <div className="bg-blue-50 rounded-lg p-3 text-center">
@@ -215,73 +228,93 @@ const ItemDetailModal = ({ item, isOpen, onClose, onAddToCart }) => {
           )}
 
           {/* Customization Options */}
-          {item.customizationOptions && item.customizationOptions.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-gray-800">Customize Your Order</h3>
+          {item.customizationOptions &&
+            item.customizationOptions.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold text-gray-800">
+                  Customize Your Order
+                </h3>
 
-              {item.customizationOptions.map((option, index) => {
-                const isMultiSelect = option.name.toLowerCase().includes('topping') ||
-                  option.name.toLowerCase().includes('extra');
+                {item.customizationOptions.map((option, index) => {
+                  const isMultiSelect =
+                    option.name.toLowerCase().includes("topping") ||
+                    option.name.toLowerCase().includes("extra");
 
-                return (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-gray-800">
-                        {option.name}
-                        {option.required && (
-                          <span className="text-red-500 ml-1">*</span>
+                  return (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-gray-800">
+                          {option.name}
+                          {option.required && (
+                            <span className="text-red-500 ml-1">*</span>
+                          )}
+                        </h4>
+                        {!option.required && (
+                          <span className="text-xs text-gray-500">
+                            Optional
+                          </span>
                         )}
-                      </h4>
-                      {!option.required && (
-                        <span className="text-xs text-gray-500">Optional</span>
-                      )}
-                    </div>
+                      </div>
 
-                    <div className="space-y-2">
-                      {option.choices.map((choice, choiceIndex) => {
-                        const choiceName = typeof choice === 'string' ? choice : choice.name;
-                        const choicePrice = typeof choice === 'object' ? choice.price : 0;
-                        const isSelected = isMultiSelect
-                          ? (customizations[option.name] || []).includes(choiceName)
-                          : customizations[option.name] === choiceName;
+                      <div className="space-y-2">
+                        {option.choices.map((choice, choiceIndex) => {
+                          const choiceName =
+                            typeof choice === "string" ? choice : choice.name;
+                          const choicePrice =
+                            typeof choice === "object" ? choice.price : 0;
+                          const isSelected = isMultiSelect
+                            ? (customizations[option.name] || []).includes(
+                                choiceName,
+                              )
+                            : customizations[option.name] === choiceName;
 
-                        return (
-                          <label
-                            key={choiceIndex}
-                            className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition"
-                          >
-                            <div className="flex items-center space-x-3">
-                              <input
-                                type={isMultiSelect ? 'checkbox' : 'radio'}
-                                name={option.name}
-                                checked={isSelected}
-                                onChange={() =>
-                                  isMultiSelect
-                                    ? handleMultipleChoice(option.name, choiceName)
-                                    : handleSingleChoice(option.name, choiceName)
-                                }
-                                className="w-4 h-4 text-orange-600 focus:ring-orange-500"
-                              />
-                              <span className="text-gray-700">{choiceName}</span>
-                            </div>
-                            {choicePrice > 0 && (
-                              <span className="text-sm text-gray-600">
-                                +₹{choicePrice.toFixed(2)}
-                              </span>
-                            )}
-                          </label>
-                        );
-                      })}
+                          return (
+                            <label
+                              key={choiceIndex}
+                              className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition"
+                            >
+                              <div className="flex items-center space-x-3">
+                                <input
+                                  type={isMultiSelect ? "checkbox" : "radio"}
+                                  name={option.name}
+                                  checked={isSelected}
+                                  onChange={() =>
+                                    isMultiSelect
+                                      ? handleMultipleChoice(
+                                          option.name,
+                                          choiceName,
+                                        )
+                                      : handleSingleChoice(
+                                          option.name,
+                                          choiceName,
+                                        )
+                                  }
+                                  className="w-4 h-4 text-orange-600 focus:ring-orange-500"
+                                />
+                                <span className="text-gray-700">
+                                  {choiceName}
+                                </span>
+                              </div>
+                              {choicePrice > 0 && (
+                                <span className="text-sm text-gray-600">
+                                  +₹{choicePrice.toFixed(2)}
+                                </span>
+                              )}
+                            </label>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
 
           {/* Special Instructions */}
           <div>
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Special Instructions</h3>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">
+              Special Instructions
+            </h3>
             <p className="text-sm text-gray-600 mb-3">
               Have any special requests? Let us know! (Optional)
             </p>
@@ -300,7 +333,9 @@ const ItemDetailModal = ({ item, isOpen, onClose, onAddToCart }) => {
 
           {/* Quantity */}
           <div className="flex items-center justify-between border-t pt-6">
-            <span className="text-lg font-semibold text-gray-800">Quantity</span>
+            <span className="text-lg font-semibold text-gray-800">
+              Quantity
+            </span>
             <QuantityControl
               quantity={quantity}
               onIncrease={() => setQuantity(quantity + 1)}
@@ -323,11 +358,11 @@ const ItemDetailModal = ({ item, isOpen, onClose, onAddToCart }) => {
             disabled={!item.isAvailable}
             className={`w-full py-3 rounded-lg font-bold text-white transition ${
               item.isAvailable
-                ? 'bg-orange-600 hover:bg-orange-700'
-                : 'bg-gray-400 cursor-not-allowed'
+                ? "bg-orange-600 hover:bg-orange-700"
+                : "bg-gray-400 cursor-not-allowed"
             }`}
           >
-            {item.isAvailable ? 'Add to Cart' : 'Currently Unavailable'}
+            {item.isAvailable ? "Add to Cart" : "Currently Unavailable"}
           </button>
         </div>
       </div>
