@@ -49,7 +49,7 @@ const Navbar = ({ cartItemCount }) => {
             to="/"
             className="text-2xl font-bold hover:text-orange-100 transition"
           >
-            🍕 FoodHub
+            🍕 Foodito
           </Link>
 
           {/* Desktop Navigation */}
@@ -68,17 +68,18 @@ const Navbar = ({ cartItemCount }) => {
             </Link>
 
             {/* Cart Icon with Badge */}
-            <Link
-              to="/cart"
-              className="relative hover:text-orange-100 transition"
-            >
+            { user && (
+              <Link to="/cart" className="relative hover:text-orange-100 transition">                
               <ShoppingCart size={24} />
+
               {cartItemCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                   {cartItemCount}
                 </span>
               )}
+
             </Link>
+            )}
 
             {/* User Menu */}
             {user ? (
@@ -110,6 +111,7 @@ const Navbar = ({ cartItemCount }) => {
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center space-x-4">
             {/* Cart Icon (Always Visible on Mobile) */}
+            {user && (
             <Link to="/cart" className="relative" onClick={closeMobileMenu}>
               <ShoppingCart size={24} />
               {cartItemCount > 0 && (
@@ -118,6 +120,7 @@ const Navbar = ({ cartItemCount }) => {
                 </span>
               )}
             </Link>
+            )}
 
             {/* Hamburger Menu */}
             <button
