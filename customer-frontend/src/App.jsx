@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useCart } from './context/CartContext';
+import PrivateRoute from './components/PrivateRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import MenuPage from './pages/MenuPage';
@@ -22,12 +23,12 @@ function App() {
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<MenuPage />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/orders" element={<OrdersPage />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/cart" element={<PrivateRoute><CartPage /></PrivateRoute>} />
+            <Route path="/checkout" element={<PrivateRoute><CheckoutPage /></PrivateRoute>} />
+            <Route path="/orders" element={<PrivateRoute><OrdersPage /></PrivateRoute>} />
+            <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
           </Routes>
         </main>
 
