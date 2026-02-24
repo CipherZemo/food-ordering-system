@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { menuAPI } from '../services/api';
@@ -96,6 +97,13 @@ const MenuPage = () => {
   };
 
   const handleAddToCart = (item, customizations, quantity, specialInstructions) => {
+      // Check if user is logged in
+  const token = localStorage.getItem('token');
+  if (!token) {
+    toast.error('Please login to add items to cart');
+    Navigate('/login?returnUrl=/');
+    return;
+  }
     addToCart(item, customizations, quantity, specialInstructions);
     toast.success(`${quantity}x ${item.name} added to cart!`);
   };
