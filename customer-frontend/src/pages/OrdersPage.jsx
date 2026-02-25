@@ -20,6 +20,12 @@ const OrdersPage = () => {
       return;
     }
     fetchOrders();
+
+    const interval = setInterval(() => {
+      fetchOrders();
+    }, 30000); // Auto-refresh every 30 seconds
+    return () => clearInterval(interval); // Cleanup interval when user leaves page
+    
   }, [navigate]);
 
   const fetchOrders = async () => {
@@ -143,9 +149,13 @@ const OrdersPage = () => {
                   </button>
 
                   {/* Expand/Collapse view details button Button */}
-                  <button onClick={() => toggleOrderDetails(order._id)}
-                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition" >
-                    {expandedOrderId === order._id ? "Hide Details" : "View Details"}
+                  <button
+                    onClick={() => toggleOrderDetails(order._id)}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                  >
+                    {expandedOrderId === order._id
+                      ? "Hide Details"
+                      : "View Details"}
                   </button>
                 </div>
               </div>
@@ -202,10 +212,16 @@ const OrdersPage = () => {
                   {/* Delivery Address */}
                   {order.deliveryAddress && (
                     <div>
-                      <h4 className="font-semibold text-gray-800 mb-2">Delivery Address</h4>
+                      <h4 className="font-semibold text-gray-800 mb-2">
+                        Delivery Address
+                      </h4>
                       <p className="text-gray-600 text-sm">
-                        {order.deliveryAddress.street}<br />
-                        {order.deliveryAddress.city}, {order.deliveryAddress.state} {order.deliveryAddress.zipCode}<br />
+                        {order.deliveryAddress.street}
+                        <br />
+                        {order.deliveryAddress.city},{" "}
+                        {order.deliveryAddress.state}{" "}
+                        {order.deliveryAddress.zipCode}
+                        <br />
                         {order.deliveryAddress.country}
                       </p>
                     </div>
@@ -213,21 +229,30 @@ const OrdersPage = () => {
 
                   {/* All Items with Details */}
                   <div>
-                    <h4 className="font-semibold text-gray-800 mb-3">Order Items</h4>
+                    <h4 className="font-semibold text-gray-800 mb-3">
+                      Order Items
+                    </h4>
                     <div className="space-y-3">
                       {order.items.map((item, index) => (
-                        <div key={index} className="flex justify-between items-start bg-gray-50 rounded-lg p-3">
+                        <div
+                          key={index}
+                          className="flex justify-between items-start bg-gray-50 rounded-lg p-3"
+                        >
                           <div className="flex-grow">
                             <p className="font-medium text-gray-800">
                               {item.quantity}x {item.name}
                             </p>
-                            {item.customizations && Object.keys(item.customizations).length > 0 && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                {Object.entries(item.customizations)
-                                  .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
-                                  .join(' • ')}
-                              </p>
-                            )}
+                            {item.customizations &&
+                              Object.keys(item.customizations).length > 0 && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {Object.entries(item.customizations)
+                                    .map(
+                                      ([key, value]) =>
+                                        `${key}: ${Array.isArray(value) ? value.join(", ") : value}`,
+                                    )
+                                    .join(" • ")}
+                                </p>
+                              )}
                             {item.specialInstructions && (
                               <p className="text-xs text-gray-500 mt-1 italic">
                                 Note: {item.specialInstructions}
@@ -235,8 +260,12 @@ const OrdersPage = () => {
                             )}
                           </div>
                           <div className="text-right ml-4">
-                            <p className="font-medium text-gray-800">₹{item.subtotal.toFixed(2)}</p>
-                            <p className="text-xs text-gray-500">₹{item.price.toFixed(2)} each</p>
+                            <p className="font-medium text-gray-800">
+                              ₹{item.subtotal.toFixed(2)}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              ₹{item.price.toFixed(2)} each
+                            </p>
                           </div>
                         </div>
                       ))}
@@ -245,29 +274,37 @@ const OrdersPage = () => {
 
                   {/* Payment Info */}
                   <div>
-                    <h4 className="font-semibold text-gray-800 mb-2">Payment Information</h4>
+                    <h4 className="font-semibold text-gray-800 mb-2">
+                      Payment Information
+                    </h4>
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600">Payment Method:</span>
-                        <span className="text-gray-800 font-medium capitalize">{order.paymentMethod}</span>
+                        <span className="text-gray-800 font-medium capitalize">
+                          {order.paymentMethod}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Payment Status:</span>
-                        <span className={`font-medium ${order.paymentStatus === 'paid' ? 'text-green-600' : 'text-yellow-600'}`}>
-                          {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
+                        <span
+                          className={`font-medium ${order.paymentStatus === "paid" ? "text-green-600" : "text-yellow-600"}`}
+                        >
+                          {order.paymentStatus.charAt(0).toUpperCase() +
+                            order.paymentStatus.slice(1)}
                         </span>
                       </div>
                       {order.razorpayPaymentId && (
                         <div className="flex justify-between">
                           <span className="text-gray-600">Payment ID:</span>
-                          <span className="text-gray-500 text-xs">{order.razorpayPaymentId}</span>
+                          <span className="text-gray-500 text-xs">
+                            {order.razorpayPaymentId}
+                          </span>
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
-              )}           
-
+              )}
             </div>
           ))}
         </div>
