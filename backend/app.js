@@ -10,6 +10,7 @@ dotenv.config();
 connect();
 const app=express();
 
+
 // Create HTTP server
 const server = http.createServer(app);
 // Initialize Socket.io with CORS
@@ -40,12 +41,14 @@ app.use('/api/webhooks', require('./routes/webhookRoutes'));
 // Webhook route MUST be before express.json() since Stripe needs raw body for signature verification
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
+app.use('/uploads', express.static('uploads'));
 
 app.use('/api/', apiLimiter);
 app.use('/api/menu', require('./routes/menuRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/kitchen', require('./routes/kitchenRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes')); 
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
