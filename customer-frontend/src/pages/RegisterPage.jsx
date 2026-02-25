@@ -55,7 +55,7 @@ const RegisterPage = () => {
       localStorage.setItem('user', JSON.stringify(response.data));
 
       toast.success('Registration successful!');
-      navigate('/');
+      navigate('/login');
     } catch (error) {
       console.error('Registration error:', error);
 

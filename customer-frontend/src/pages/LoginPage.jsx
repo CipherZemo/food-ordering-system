@@ -38,9 +38,14 @@ const LoginPage = () => {
       window.dispatchEvent(new Event("userLogin"));
       toast.success("Login successful!");
 
-      // Redirect to return URL or home
-      const returnUrl = searchParams.get("returnUrl") || "/";
-      navigate(returnUrl);
+      // Check if user is admin
+      if (response.data.isAdmin || response.data.role === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        // Regular user → Go to return URL or home
+        const returnUrl = searchParams.get("returnUrl") || "/";
+        navigate(returnUrl);
+      }
     } catch (error) {
       console.error("Login error:", error);
       toast.error(error.response?.data?.message || "Login failed");
