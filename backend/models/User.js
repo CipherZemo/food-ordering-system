@@ -26,6 +26,10 @@ const userSchema = new mongoose.Schema({
         enum: ['customer', 'kitchen', 'admin'],
         default: 'customer',
     },
+    isAdmin: {
+        type: Boolean,
+        default: false,
+    },
     phone: {
         type: String,
         trim: true,
@@ -42,17 +46,17 @@ const userSchema = new mongoose.Schema({
 );
 
 // Hash password before saving
-userSchema.pre('save', async function (next){
-    if (!this.isModified('password')){ //this is user document
+userSchema.pre('save', async function (next) {
+    if (!this.isModified('password')) { //this is user document
         return;
     }
     const salt = await bcrypt.genSalt(10);
-    this.password= await bcrypt.hash(this.password,salt);
+    this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Method to compare passwords
-userSchema.methods.comparePassword= async function (candidatePassword){
-    return await bcrypt.compare(candidatePassword,this.password);
+userSchema.methods.comparePassword = async function (candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
 };
 
-module.exports=mongoose.model('User',userSchema);
+module.exports = mongoose.model('User', userSchema);
