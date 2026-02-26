@@ -219,7 +219,7 @@ db.users.updateOne(
 ---
 
 ## 📁 Project Structure
-```bash
+```
 food-ordering-system/
 ├── backend/
 │   ├── config/           # Database and upload configs
@@ -234,13 +234,13 @@ food-ordering-system/
 ├── customer-frontend/
 │   ├── public/           # Static assets
 │   └── src/
-|       ├── assets/       # Static assets
+│       ├── assets/       # Static assets
 │       ├── components/   # Reusable components
 │       ├── context/      # React Context (Cart)
 │       ├── pages/        # Page components
 │       │   └── admin/    # Admin pages
 │       └── services/     # API services
-|
+│
 │   
 │
 └── kitchen-dashboard/
