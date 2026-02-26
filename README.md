@@ -208,7 +208,7 @@ db.users.updateOne(
 ### Razorpay Test Cards
 
 **Success:**
-- Card: `4111 1111 1111 1111`
+- Card: `4100 2800 0000 1007`
 - CVV: Any 3 digits
 - Expiry: Any future date
 
