@@ -1,29 +1,20 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { adminService } from '../../services/adminAPI';
-import toast from 'react-hot-toast';
-import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Power,
-  PowerOff,
-  ArrowLeft,
-  Copy,
-  X,
-} from 'lucide-react';
-import MenuItemModal from '../../components/admin/MenuItemModal';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import { useState, useEffect } from "react";
+// import { useNavigate } from "react-router-dom";
+import { adminService } from "../../services/adminAPI";
+import toast from "react-hot-toast";
+import { Plus,Search,Edit,Trash2,Power,PowerOff,ArrowLeft, Copy,X, } from "lucide-react";
+import MenuItemModal from "../../components/admin/MenuItemModal";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import AdminNavbar from "../../components/admin/AdminNavbar";
 
 const MenuManagement = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedItems, setSelectedItems] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -45,8 +36,8 @@ const MenuManagement = () => {
       setItems(itemsRes.data);
       setCategories(categoriesRes.data);
     } catch (error) {
-      console.error('Error fetching data:', error);
-      toast.error('Failed to load menu items');
+      console.error("Error fetching data:", error);
+      toast.error("Failed to load menu items");
     } finally {
       setLoading(false);
     }
@@ -56,7 +47,7 @@ const MenuManagement = () => {
     let filtered = [...items];
 
     // Filter by category
-    if (selectedCategory !== 'all') {
+    if (selectedCategory !== "all") {
       filtered = filtered.filter((item) => item.category === selectedCategory);
     }
 
@@ -67,7 +58,7 @@ const MenuManagement = () => {
         (item) =>
           item.name.toLowerCase().includes(query) ||
           item.description.toLowerCase().includes(query) ||
-          item.category.toLowerCase().includes(query)
+          item.category.toLowerCase().includes(query),
       );
     }
 
@@ -77,11 +68,11 @@ const MenuManagement = () => {
   const handleToggleAvailability = async (id) => {
     try {
       await adminService.toggleAvailability(id);
-      toast.success('Availability updated');
+      toast.success("Availability updated");
       fetchData();
     } catch (error) {
-      console.error('Error updating availability:', error);
-      toast.error('Failed to update availability');
+      console.error("Error updating availability:", error);
+      toast.error("Failed to update availability");
     }
   };
 
@@ -90,11 +81,11 @@ const MenuManagement = () => {
 
     try {
       await adminService.deleteMenuItem(id);
-      toast.success('Item deleted');
+      toast.success("Item deleted");
       fetchData();
     } catch (error) {
-      console.error('Error deleting item:', error);  
-      toast.error('Failed to delete item');
+      console.error("Error deleting item:", error);
+      toast.error("Failed to delete item");
     }
   };
 
@@ -123,8 +114,8 @@ const MenuManagement = () => {
       setSelectedItems([]);
       fetchData();
     } catch (error) {
-        console.error('Error bulk deleting items:', error);
-      toast.error('Failed to delete items');
+      console.error("Error bulk deleting items:", error);
+      toast.error("Failed to delete items");
     }
   };
 
@@ -137,14 +128,14 @@ const MenuManagement = () => {
       setSelectedItems([]);
       fetchData();
     } catch (error) {
-        console.error('Error bulk updating items:', error);
-      toast.error('Failed to update items');
+      console.error("Error bulk updating items:", error);
+      toast.error("Failed to update items");
     }
   };
 
   const toggleSelectItem = (id) => {
     setSelectedItems((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   };
 
@@ -160,32 +151,26 @@ const MenuManagement = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
+
       {/* Header */}
-      <nav className="bg-orange-600 text-white shadow-lg">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate('/admin/dashboard')}
-                className="hover:bg-orange-700 p-2 rounded transition"
-              >
-                <ArrowLeft size={24} />
-              </button>
-              <h1 className="text-2xl font-bold">Menu Management</h1>
-            </div>
-            <button
-              onClick={() => {
-                setEditingItem(null);
-                setIsModalOpen(true);
-              }}
-              className="flex items-center space-x-2 px-4 py-2 bg-white text-orange-600 rounded-lg hover:bg-orange-50 transition font-medium"
-            >
-              <Plus size={20} />
-              <span>Add Item</span>
-            </button>
-          </div>
+      <AdminNavbar />
+
+      {/* Add New Item Button - Move below navbar */}
+      <div className="bg-white border-b shadow-sm">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-gray-800">Menu Management</h2>
+          <button
+            onClick={() => {
+              setEditingItem(null);
+              setIsModalOpen(true);
+            }}
+            className="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium"
+          >
+            <Plus size={20} />
+            <span>Add Item</span>
+          </button>
         </div>
-      </nav>
+      </div>
 
       <div className="container mx-auto px-4 py-8">
         {/* Filters */}
@@ -207,7 +192,7 @@ const MenuManagement = () => {
                 />
                 {searchQuery && (
                   <button
-                    onClick={() => setSearchQuery('')}
+                    onClick={() => setSearchQuery("")}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     <X size={20} />
@@ -237,7 +222,8 @@ const MenuManagement = () => {
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
             <div className="flex items-center justify-between">
               <span className="text-orange-800 font-medium">
-                {selectedItems.length} item{selectedItems.length > 1 ? 's' : ''} selected
+                {selectedItems.length} item{selectedItems.length > 1 ? "s" : ""}{" "}
+                selected
               </span>
               <div className="flex items-center space-x-3">
                 <button
@@ -300,7 +286,10 @@ const MenuManagement = () => {
               <tbody className="divide-y divide-gray-200">
                 {filteredItems.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                    <td
+                      colSpan="7"
+                      className="px-6 py-12 text-center text-gray-500"
+                    >
                       No items found
                     </td>
                   </tr>
@@ -323,7 +312,9 @@ const MenuManagement = () => {
                         />
                       </td>
                       <td className="px-6 py-4">
-                        <div className="font-medium text-gray-900">{item.name}</div>
+                        <div className="font-medium text-gray-900">
+                          {item.name}
+                        </div>
                         <div className="text-sm text-gray-500 line-clamp-1">
                           {item.description}
                         </div>
@@ -339,8 +330,8 @@ const MenuManagement = () => {
                           onClick={() => handleToggleAvailability(item._id)}
                           className={`flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium ${
                             item.isAvailable
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
                           }`}
                         >
                           {item.isAvailable ? (

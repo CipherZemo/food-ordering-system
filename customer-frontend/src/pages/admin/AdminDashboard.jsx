@@ -1,46 +1,30 @@
-import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, UtensilsCrossed, LogOut } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
+import { LayoutDashboard, UtensilsCrossed,  } from "lucide-react";
+import AdminNavbar from "../../components/admin/AdminNavbar";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/');
-  };
-
   return (
     <div className="min-h-screen bg-gray-100">
-      <nav className="bg-orange-600 text-white shadow-lg">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <button
-              onClick={handleLogout}
-              className="flex items-center space-x-2 px-4 py-2 bg-orange-700 hover:bg-orange-800 rounded-lg transition"
-            >
-              <LogOut size={18} />
-              <span>Logout</span>
-            </button>
-          </div>
-        </div>
-      </nav>
+      <AdminNavbar />
 
       <div className="container mx-auto px-4 py-12">
         <h2 className="text-3xl font-bold text-gray-800 mb-8">Admin Panel</h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
           {/* Menu Management Card */}
           <button
-            onClick={() => navigate('/admin/menu')}
+            onClick={() => navigate("/admin/menu")}
             className="bg-white rounded-lg shadow-md p-8 hover:shadow-xl transition text-left group"
           >
             <div className="flex items-center space-x-4 mb-4">
               <div className="bg-orange-100 p-4 rounded-lg group-hover:bg-orange-200 transition">
                 <UtensilsCrossed size={32} className="text-orange-600" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-800">Menu Management</h3>
+              <h3 className="text-2xl font-bold text-gray-800">
+                Menu Management
+              </h3>
             </div>
             <p className="text-gray-600">
               Add, edit, and manage menu items, categories, and availability
