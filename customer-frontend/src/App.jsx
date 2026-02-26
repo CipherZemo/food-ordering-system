@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useCart } from './context/CartContext';
 import PrivateRoute from './components/PrivateRoute';
@@ -15,13 +16,16 @@ import AdminRoute from './components/admin/AdminRoute';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import MenuManagement from './pages/admin/MenuManagement';
 
-function App() {
+
+function AppContent() {
   const { cartItemCount } = useCart();
+  const location = useLocation();
 
   return (
-    <Router>
+
       <div className="flex flex-col min-h-screen bg-gray-50">
-        <Navbar cartItemCount={cartItemCount} />
+        {/* Only show customer Navbar if NOT on admin pages */}
+        {!location.pathname.startsWith('/admin') && <Navbar cartItemCount={cartItemCount} />}
 
         <main className="flex-grow">
           <Routes>
@@ -38,7 +42,8 @@ function App() {
           </Routes>
         </main>
 
-        <Footer />
+        {/* Only show Footer if NOT on admin pages */}
+        {!location.pathname.startsWith('/admin') && <Footer />}
 
         {/* Toast Notifications */}
         <Toaster
@@ -66,8 +71,13 @@ function App() {
           }}
         />
       </div>
-    </Router>
+
   );
 }
+
+function App() {
+  return(
+  <BrowserRouter><AppContent /></BrowserRouter> 
+)};
 
 export default App;
