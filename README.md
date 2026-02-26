@@ -393,9 +393,7 @@ GET    /api/admin/verify              Verify admin access
 3. Publish directory: `dist`
 
 **Important:** Add `_redirects` file to `public` folder:
-```
-/*    /index.html   200
-```
+
 
 ---
 
@@ -437,49 +435,9 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 👨‍💻 Author
-
-**Your Name**
-- GitHub: [@yourusername](https://github.com/yourusername)
-- LinkedIn: [Your Name](https://linkedin.com/in/yourprofile)
-- Email: your.email@example.com
-
----
-
-## 🙏 Acknowledgments
-
-- [Razorpay](https://razorpay.com/) for payment gateway
-- [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) for database hosting
-- [Lucide React](https://lucide.dev/) for beautiful icons
-- [Tailwind CSS](https://tailwindcss.com/) for styling
-- [Socket.io](https://socket.io/) for real-time features
-
----
-
-## 📸 Screenshots
-
-### Customer Interface
-![Menu Page](screenshots/menu.png)
-![Cart Page](screenshots/cart.png)
-![Checkout](screenshots/checkout.png)
-
-### Kitchen Dashboard
-![Dashboard](screenshots/kitchen-dashboard.png)
-
-### Admin Panel
-![Menu Management](screenshots/admin-menu.png)
-
----
-
 ## 💬 Support
 
-For support, email your.email@example.com or open an issue in the GitHub repository.
+For support, you can find my email on profile or open an issue in the GitHub repository.
 
 ---
 
