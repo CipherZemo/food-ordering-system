@@ -417,7 +417,7 @@ GET    /api/admin/verify              Verify admin access
 - [ ] Admin analytics dashboard
 - [ ] Delivery tracking with maps
 - [ ] Multiple restaurant support
-- [ ] Loyalty program
+- [ ] Websocket contoller are there but not properly implemented since app is in development mode!
 - [ ] Coupon/discount system
 - [ ] Order scheduling
 
