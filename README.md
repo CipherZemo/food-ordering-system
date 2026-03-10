@@ -1,5 +1,3 @@
-# Online Food Ordering System with Real-time Kitchen Dashboard
-
 # 🍕 Foodito - Online Food Ordering System
 
 A full-stack food ordering system with real-time kitchen dashboard, admin panel, and secure payment processing. Built as a comprehensive portfolio project demonstrating modern web development practices.
